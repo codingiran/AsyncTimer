@@ -18,14 +18,14 @@ public enum AsyncTimerInfo: Sendable {
 }
 
 /// A simple repeating timer that runs a task at a specified interval.
-final actor AsyncTimer {
+public final actor AsyncTimer {
     // MARK: - Properties
 
     /// Repeating task handler
-    typealias RepeatHandler = @Sendable () async -> Void
+    public typealias RepeatHandler = @Sendable () async -> Void
 
     /// Cancel handler
-    typealias CancelHandler = @Sendable () async -> Void
+    public typealias CancelHandler = @Sendable () async -> Void
 
     /// The task that runs the repeating timer.
     private var task: Task<Void, Error>?
@@ -57,12 +57,12 @@ final actor AsyncTimer {
     ///   - handler: The handler that is called when the timer fires.
     ///   - cancelHandler: The handler that is called when the timer is cancelled.
     /// - Returns: A new `AsyncRepeatingTimer` instance.
-    init(interval: TimeInterval,
-         priority: TaskPriority = .medium,
-         repeating: Bool = false,
-         firesImmediately: Bool = true,
-         handler: @escaping RepeatHandler,
-         cancelHandler: CancelHandler? = nil)
+    public init(interval: TimeInterval,
+                priority: TaskPriority = .medium,
+                repeating: Bool = false,
+                firesImmediately: Bool = true,
+                handler: @escaping RepeatHandler,
+                cancelHandler: CancelHandler? = nil)
     {
         self.interval = interval
         self.priority = priority
@@ -74,7 +74,7 @@ final actor AsyncTimer {
 
     /// Starts the timer.
     /// - Note: If the timer is already running, it will be stopped and restarted.
-    func start() {
+    public func start() {
         stop()
         task = Task(priority: priority) {
             guard repeating else {
@@ -100,14 +100,14 @@ final actor AsyncTimer {
     }
 
     /// Stops the timer.
-    func stop() {
+    public func stop() {
         guard let task else { return }
         task.cancel()
         self.task = nil
     }
 
     /// Restarts the timer.
-    func restart() {
+    public func restart() {
         stop()
         start()
     }
@@ -115,7 +115,7 @@ final actor AsyncTimer {
     /// Modifies the interval of the timer.
     /// - Parameter newInterval: The new interval at which the timer should fire.
     /// - Note: This will also restart the timer.
-    func setInterval(_ newInterval: TimeInterval) {
+    public func setInterval(_ newInterval: TimeInterval) {
         interval = newInterval
         restart()
     }

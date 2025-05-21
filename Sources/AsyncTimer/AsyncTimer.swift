@@ -95,6 +95,7 @@ public final actor AsyncTimer {
                 }
             } catch is CancellationError {
                 await cancelHandler?()
+                return
             } catch {}
         }
     }

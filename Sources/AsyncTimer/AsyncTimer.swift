@@ -48,7 +48,10 @@ public final actor AsyncTimer {
     /// This handler is called when the timer is cancelled.
     private var cancelHandler: CancelHandler?
 
-    /// Initializes a new `AsyncRepeatingTimer` instance.
+    /// Whether the timer is running.
+    public var isRunning: Bool { task != nil }
+
+    /// Initializes a new `AsyncTimer` instance.
     /// - Parameters:
     ///   - interval: The interval at which the timer fires.
     ///   - priority: The priority of the task. Default is `.medium`.
@@ -56,7 +59,7 @@ public final actor AsyncTimer {
     ///   - firesImmediately: Whether the timer should fire immediately upon starting. Default is `true`. It is only effective when `repeating` is `true`.
     ///   - handler: The handler that is called when the timer fires.
     ///   - cancelHandler: The handler that is called when the timer is cancelled.
-    /// - Returns: A new `AsyncRepeatingTimer` instance.
+    /// - Returns: A new `AsyncTimer` instance.
     public init(interval: TimeInterval,
                 priority: TaskPriority = .medium,
                 repeating: Bool = false,
@@ -64,6 +67,7 @@ public final actor AsyncTimer {
                 handler: @escaping RepeatHandler,
                 cancelHandler: CancelHandler? = nil)
     {
+        precondition(interval > 0, "Interval must be greater than 0")
         self.interval = interval
         self.priority = priority
         self.firesImmediately = firesImmediately
@@ -79,24 +83,32 @@ public final actor AsyncTimer {
         task = Task(priority: priority) {
             guard repeating else {
                 // one-time timer
-                try await Self.sleep(interval)
-                await self.handler()
+                do {
+                    try await Self.sleep(interval)
+                    await self.handler()
+                } catch is CancellationError {
+                    // timer was cancelled
+                    await cancelHandler?()
+                }
                 return
             }
 
             // repeating timer
-            if !firesImmediately {
-                try await Self.sleep(interval)
-            }
             do {
+                if !firesImmediately {
+                    try await Self.sleep(interval)
+                }
                 while !Task.isCancelled {
                     await self.handler()
+                    if Task.isCancelled { break }
                     try await Self.sleep(interval)
                 }
             } catch is CancellationError {
-                await cancelHandler?()
-                return
-            } catch {}
+                // timer was cancelled
+            } catch {
+                // unexpected error
+            }
+            await cancelHandler?()
         }
     }
 
@@ -117,8 +129,10 @@ public final actor AsyncTimer {
     /// - Parameter newInterval: The new interval at which the timer should fire.
     /// - Note: This will also restart the timer.
     public func setInterval(_ newInterval: TimeInterval) {
+        precondition(newInterval > 0, "Interval must be greater than 0")
+        guard interval != newInterval else { return }
         interval = newInterval
-        restart()
+        if isRunning { restart() }
     }
 }
 

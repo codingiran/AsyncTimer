@@ -35,13 +35,14 @@ Add AsyncTimer to your project using Swift Package Manager by adding it to your 
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/AsyncTimer.git", from: "0.0.1")
+    .package(url: "https://github.com/codingiran/AsyncTimer.git", from: "0.0.3")
 ]
 ```
 
 Or add it directly in Xcode:
+
 1. Go to **File** > **Add Packages...**
-2. Enter the repository URL: `https://github.com/yourusername/AsyncTimer.git`
+2. Enter the repository URL: `https://github.com/codingiran/AsyncTimer.git`
 3. Select the version or branch you want to use
 
 ## Usage

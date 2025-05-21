@@ -14,7 +14,7 @@ import Foundation
 
 public enum AsyncTimerInfo: Sendable {
     /// Current AsyncTimer version.
-    public static let version = "0.0.2"
+    public static let version = "0.0.3"
 }
 
 /// A simple repeating timer that runs a task at a specified interval.

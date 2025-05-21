@@ -125,4 +125,139 @@ import Testing
         try await Task.sleep(nanoseconds: UInt64(0.15 * 1_000_000_000))
         #expect(count > countAfterStop, "Count should increase after restarting")
     }
+
+    // MARK: - Cancel Handler Tests
+
+    @MainActor
+    @Test func testCancelHandler() async throws {
+        var handlerExecuted = false
+        var cancelHandlerExecuted = false
+
+        let timer = AsyncTimer(
+            interval: 0.1,
+            repeating: true,
+            handler: {
+                @MainActor in
+                handlerExecuted = true
+            },
+            cancelHandler: {
+                @MainActor in
+                cancelHandlerExecuted = true
+            }
+        )
+
+        await timer.start()
+        try await Task.sleep(nanoseconds: UInt64(0.15 * 1_000_000_000))
+        await timer.stop()
+        try await Task.sleep(nanoseconds: UInt64(0.05 * 1_000_000_000)) // Give time for cancel handler to execute
+
+        #expect(handlerExecuted, "Timer handler should have executed")
+        #expect(cancelHandlerExecuted, "Cancel handler should have executed after stopping the timer")
+    }
+
+    // MARK: - Task Priority Tests
+
+    @MainActor
+    @Test func taskPriority() async throws {
+        var highPriorityExecutionTime: TimeInterval = 0
+        var lowPriorityExecutionTime: TimeInterval = 0
+        let startTime = Date().timeIntervalSince1970
+
+        // Create a high priority timer
+        let highPriorityTimer = AsyncTimer(
+            interval: 0.1,
+            priority: .high,
+            repeating: false,
+            handler: {
+                @MainActor in
+                // Simulate some work
+                for _ in 0..<1000000 {
+                    _ = 1 + 1
+                }
+                highPriorityExecutionTime = Date().timeIntervalSince1970 - startTime
+            }
+        )
+
+        // Create a low priority timer
+        let lowPriorityTimer = AsyncTimer(
+            interval: 0.1,
+            priority: .low,
+            repeating: false,
+            handler: {
+                @MainActor in
+                // Simulate some work
+                for _ in 0..<1000000 {
+                    _ = 1 + 1
+                }
+                lowPriorityExecutionTime = Date().timeIntervalSince1970 - startTime
+            }
+        )
+
+        // Start both timers at the same time
+        await lowPriorityTimer.start()
+        await highPriorityTimer.start()
+
+        // Wait for both to complete
+        try await Task.sleep(nanoseconds: UInt64(0.3 * 1_000_000_000))
+
+        // Note: This test is probabilistic and may not always pass
+        // In a heavily loaded system, the scheduler might not respect priorities as expected
+        #expect(highPriorityExecutionTime <= lowPriorityExecutionTime, "High priority timer should execute before or at the same time as low priority timer")
+    }
+
+    // MARK: - Multiple Timers Test
+
+    @MainActor
+    @Test func multipleTimers() async throws {
+        var counts = [0, 0, 0]
+
+        let timer1 = AsyncTimer(
+            interval: 0.05,
+            repeating: true,
+            handler: {
+                @MainActor in
+                counts[0] += 1
+            }
+        )
+
+        let timer2 = AsyncTimer(
+            interval: 0.07,
+            repeating: true,
+            handler: {
+                @MainActor in
+                counts[1] += 1
+            }
+        )
+
+        let timer3 = AsyncTimer(
+            interval: 0.03,
+            repeating: true,
+            handler: {
+                @MainActor in
+                counts[2] += 1
+            }
+        )
+
+        // Start all timers
+        await timer1.start()
+        await timer2.start()
+        await timer3.start()
+
+        // Let them run for a while
+        try await Task.sleep(nanoseconds: UInt64(0.3 * 1_000_000_000))
+
+        // Stop all timers
+        await timer1.stop()
+        await timer2.stop()
+        await timer3.stop()
+
+        // Check that all timers executed
+        #expect(counts[0] > 0, "Timer 1 should have executed")
+        #expect(counts[1] > 0, "Timer 2 should have executed")
+        #expect(counts[2] > 0, "Timer 3 should have executed")
+
+        // Timer3 should have executed more times than timer1, which should have executed more times than timer2
+        #expect(counts[2] > counts[0], "Timer with shorter interval should execute more times")
+        #expect(counts[0] > counts[1], "Timer with shorter interval should execute more times")
+    }
 }

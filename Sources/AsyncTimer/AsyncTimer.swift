@@ -125,6 +125,7 @@ public final actor AsyncTimer {
 public extension AsyncTimer {
     /// Sleep for the specified interval.
     static func sleep(_ interval: TimeInterval) async throws {
+        precondition(interval > 0, "Interval must be greater than 0")
         try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
     }
 }

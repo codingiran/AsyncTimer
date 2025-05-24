@@ -49,7 +49,7 @@ public final actor AsyncTimer {
     private var cancelHandler: CancelHandler?
 
     /// Whether the timer is running.
-    public var isRunning: Bool { task != nil }
+    public var state: State = .idle
 
     /// Initializes a new `AsyncTimer` instance.
     /// - Parameters:
@@ -81,11 +81,14 @@ public final actor AsyncTimer {
     public func start() {
         stop()
         task = Task(priority: priority) {
+            state = .running(executing: false)
             guard repeating else {
                 // one-time timer
                 do {
                     try await Self.sleep(interval)
+                    state = .running(executing: true)
                     await self.handler()
+                    state = .finished
                 } catch is CancellationError {
                     // timer was cancelled
                     await cancelHandler?()
@@ -99,10 +102,12 @@ public final actor AsyncTimer {
                     try await Self.sleep(interval)
                 }
                 while !Task.isCancelled {
+                    state = .running(executing: true)
                     await self.handler()
                     if Task.isCancelled { break }
                     try await Self.sleep(interval)
                 }
+                state = .finished
             } catch is CancellationError {
                 // timer was cancelled
             } catch {
@@ -117,6 +122,7 @@ public final actor AsyncTimer {
         guard let task else { return }
         task.cancel()
         self.task = nil
+        state = .idle
     }
 
     /// Restarts the timer.
@@ -141,5 +147,14 @@ public extension AsyncTimer {
     static func sleep(_ interval: TimeInterval) async throws {
         precondition(interval > 0, "Interval must be greater than 0")
         try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+    }
+}
+
+public extension AsyncTimer {
+    /// The state of the timer.
+    enum State: Sendable {
+        case idle
+        case running(executing: Bool)
+        case finished
     }
 }

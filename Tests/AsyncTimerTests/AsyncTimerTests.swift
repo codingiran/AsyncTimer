@@ -171,7 +171,7 @@ import Testing
             handler: {
                 @MainActor in
                 // Simulate some work
-                for _ in 0..<1000000 {
+                for _ in 0 ..< 1_000_000 {
                     _ = 1 + 1
                 }
                 highPriorityExecutionTime = Date().timeIntervalSince1970 - startTime
@@ -186,7 +186,7 @@ import Testing
             handler: {
                 @MainActor in
                 // Simulate some work
-                for _ in 0..<1000000 {
+                for _ in 0 ..< 1_000_000 {
                     _ = 1 + 1
                 }
                 lowPriorityExecutionTime = Date().timeIntervalSince1970 - startTime

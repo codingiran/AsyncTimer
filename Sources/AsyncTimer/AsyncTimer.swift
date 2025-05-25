@@ -14,7 +14,7 @@ import Foundation
 
 public enum AsyncTimerInfo: Sendable {
     /// Current AsyncTimer version.
-    public static let version = "0.0.3"
+    public static let version = "0.0.4"
 }
 
 /// A simple repeating timer that runs a task at a specified interval.
@@ -81,14 +81,15 @@ public final actor AsyncTimer {
     public func start() {
         stop()
         task = Task(priority: priority) {
+            // one-time timer
             guard repeating else {
-                // one-time timer
                 do {
                     try await Self.sleep(interval)
                     await self.handler()
-                } catch is CancellationError {
-                    // timer was cancelled
-                    await cancelHandler?()
+                    handleTaskCompletion()
+                } catch {
+                    // task was cancelled
+                    handleTaskCancelation()
                 }
                 return
             }
@@ -103,12 +104,11 @@ public final actor AsyncTimer {
                     if Task.isCancelled { break }
                     try await Self.sleep(interval)
                 }
-            } catch is CancellationError {
-                // timer was cancelled
             } catch {
-                // unexpected error
+                // task was cancelled
             }
-            await cancelHandler?()
+            // while loop was break or task cancelled
+            handleTaskCancelation()
         }
     }
 
@@ -133,6 +133,19 @@ public final actor AsyncTimer {
         guard interval != newInterval else { return }
         interval = newInterval
         if isRunning { restart() }
+    }
+}
+
+private extension AsyncTimer {
+    /// Handles the task cancelation.
+    func handleTaskCancelation() {
+        task = nil
+        Task { await self.cancelHandler?() }
+    }
+
+    /// Handles the task completion.
+    func handleTaskCompletion() {
+        task = nil
     }
 }
 

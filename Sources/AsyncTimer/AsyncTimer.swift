@@ -14,7 +14,7 @@ import Foundation
 
 public enum AsyncTimerInfo: Sendable {
     /// Current AsyncTimer version.
-    public static let version = "0.0.4"
+    public static let version = "0.1.0"
 }
 
 /// A simple repeating timer that runs a task at a specified interval.
@@ -31,7 +31,7 @@ public final actor AsyncTimer {
     private var task: Task<Void, Error>?
 
     /// The interval at which the timer fires.
-    private var interval: TimeInterval
+    private var interval: Interval
 
     /// The priority of the task.
     private let priority: TaskPriority
@@ -60,14 +60,14 @@ public final actor AsyncTimer {
     ///   - handler: The handler that is called when the timer fires.
     ///   - cancelHandler: The handler that is called when the timer is cancelled.
     /// - Returns: A new `AsyncTimer` instance.
-    public init(interval: TimeInterval,
+    public init(interval: Interval,
                 priority: TaskPriority = .medium,
                 repeating: Bool = false,
                 firesImmediately: Bool = true,
                 handler: @escaping RepeatHandler,
                 cancelHandler: CancelHandler? = nil)
     {
-        precondition(interval > 0, "Interval must be greater than 0")
+        precondition(interval.isValid, "Interval must be greater or equal to 0")
         self.interval = interval
         self.priority = priority
         self.firesImmediately = firesImmediately
@@ -80,16 +80,18 @@ public final actor AsyncTimer {
     /// - Note: If the timer is already running, it will be stopped and restarted.
     public func start() {
         stop()
-        task = Task(priority: priority) {
+        task = Task(priority: priority) { [weak self] in
+            guard let self else { return }
+
             // one-time timer
             guard repeating else {
                 do {
                     try await Self.sleep(interval)
-                    await self.handler()
-                    handleTaskCompletion()
+                    await handler()
+                    await handleTaskCompletion()
                 } catch {
                     // task was cancelled
-                    handleTaskCancelation()
+                    await handleTaskCancelation()
                 }
                 return
             }
@@ -100,23 +102,22 @@ public final actor AsyncTimer {
                     try await Self.sleep(interval)
                 }
                 while !Task.isCancelled {
-                    await self.handler()
+                    await handler()
                     if Task.isCancelled { break }
                     try await Self.sleep(interval)
                 }
             } catch {
-                // task was cancelled
+                // task was cancelled during sleep
             }
             // while loop was break or task cancelled
-            handleTaskCancelation()
+            await handleTaskCancelation()
         }
     }
 
     /// Stops the timer.
     public func stop() {
-        guard let task else { return }
-        task.cancel()
-        self.task = nil
+        task?.cancel()
+        task = nil
     }
 
     /// Restarts the timer.
@@ -128,8 +129,8 @@ public final actor AsyncTimer {
     /// Modifies the interval of the timer.
     /// - Parameter newInterval: The new interval at which the timer should fire.
     /// - Note: This will also restart the timer.
-    public func setInterval(_ newInterval: TimeInterval) {
-        precondition(newInterval > 0, "Interval must be greater than 0")
+    public func setInterval(_ newInterval: Interval) {
+        precondition(newInterval.isValid, "Interval must be greater or equal to 0")
         guard interval != newInterval else { return }
         interval = newInterval
         if isRunning { restart() }
@@ -140,7 +141,9 @@ private extension AsyncTimer {
     /// Handles the task cancelation.
     func handleTaskCancelation() {
         task = nil
-        Task { await self.cancelHandler?() }
+        Task { [weak self] in
+            await self?.cancelHandler?()
+        }
     }
 
     /// Handles the task completion.
@@ -151,8 +154,8 @@ private extension AsyncTimer {
 
 public extension AsyncTimer {
     /// Sleep for the specified interval.
-    static func sleep(_ interval: TimeInterval) async throws {
-        precondition(interval > 0, "Interval must be greater than 0")
-        try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+    static func sleep(_ interval: Interval) async throws {
+        precondition(interval.isValid, "Interval must be greater or equal to 0")
+        try await Task.sleep(nanoseconds: interval.nanoseconds)
     }
 }

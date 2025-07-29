@@ -44,6 +44,12 @@ public enum Interval: Sendable {
         }
     }
 
+    /// Zero interval.
+    public static let zero: Interval = .nanoseconds(0)
+
+    /// Infinite interval.
+    public static let infinite: Interval = .nanoseconds(UInt64.max)
+
     /// Whether the interval is zero.
     public var isZero: Bool { nanoseconds == 0 }
 

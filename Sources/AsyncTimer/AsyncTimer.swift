@@ -76,6 +76,11 @@ public final actor AsyncTimer {
         self.cancelHandler = cancelHandler
     }
 
+    deinit {
+        task?.cancel()
+        task = nil
+    }
+
     /// Starts the timer.
     /// - Note: If the timer is already running, it will be stopped and restarted.
     public func start() {

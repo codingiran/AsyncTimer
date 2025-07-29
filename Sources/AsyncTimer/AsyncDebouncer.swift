@@ -24,6 +24,10 @@ public final actor AsyncDebouncer {
         self.debounceTime = debounceTime
     }
 
+    deinit {
+        timer = nil
+    }
+
     /// Calls the debounce handler.
     /// - Parameters:
     ///   - debounceTime: Override the debounce time of initializes value.

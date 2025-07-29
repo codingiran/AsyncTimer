@@ -11,7 +11,7 @@ import Testing
     @Test func oneTimeTimer() async throws {
         var count = 0
         let timer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             repeating: false,
             handler: {
                 @MainActor in
@@ -31,7 +31,7 @@ import Testing
     @Test func repeatingTimer() async throws {
         var count = 0
         let timer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             repeating: true,
             firesImmediately: false,
             handler: {
@@ -55,7 +55,7 @@ import Testing
         let startTime = Date().timeIntervalSince1970
 
         let timer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             repeating: true,
             firesImmediately: true,
             handler: {
@@ -80,7 +80,7 @@ import Testing
         let startTime = Date().timeIntervalSince1970
 
         let timer = AsyncTimer(
-            interval: 0.2,
+            interval: .seconds(0.2),
             repeating: true,
             handler: {
                 @MainActor in
@@ -90,7 +90,7 @@ import Testing
 
         await timer.start()
         try await Task.sleep(nanoseconds: UInt64(0.3 * 1_000_000_000))
-        await timer.setInterval(0.1)
+        await timer.setInterval(.seconds(0.1))
         try await Task.sleep(nanoseconds: UInt64(0.2 * 1_000_000_000))
         await timer.stop()
 
@@ -106,7 +106,7 @@ import Testing
     @Test func stopAndRestart() async throws {
         var count = 0
         let timer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             repeating: true,
             handler: {
                 @MainActor in
@@ -134,7 +134,7 @@ import Testing
         var cancelHandlerExecuted = false
 
         let timer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             repeating: true,
             handler: {
                 @MainActor in
@@ -165,7 +165,7 @@ import Testing
 
         // Create a high priority timer
         let highPriorityTimer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             priority: .high,
             repeating: false,
             handler: {
@@ -180,7 +180,7 @@ import Testing
 
         // Create a low priority timer
         let lowPriorityTimer = AsyncTimer(
-            interval: 0.1,
+            interval: .seconds(0.1),
             priority: .low,
             repeating: false,
             handler: {
@@ -212,7 +212,7 @@ import Testing
         var counts = [0, 0, 0]
 
         let timer1 = AsyncTimer(
-            interval: 0.05,
+            interval: .seconds(0.05),
             repeating: true,
             handler: {
                 @MainActor in
@@ -221,7 +221,7 @@ import Testing
         )
 
         let timer2 = AsyncTimer(
-            interval: 0.07,
+            interval: .seconds(0.07),
             repeating: true,
             handler: {
                 @MainActor in
@@ -230,7 +230,7 @@ import Testing
         )
 
         let timer3 = AsyncTimer(
-            interval: 0.03,
+            interval: .seconds(0.03),
             repeating: true,
             handler: {
                 @MainActor in

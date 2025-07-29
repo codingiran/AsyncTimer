@@ -8,8 +8,8 @@
 import Foundation
 
 // Enforce minimum Swift version for all platforms and build systems.
-#if swift(<5.9)
-    #error("AsyncTimer doesn't support Swift versions below 5.9")
+#if swift(<5.10)
+    #error("AsyncTimer doesn't support Swift versions below 5.10")
 #endif
 
 public enum AsyncTimerInfo: Sendable {

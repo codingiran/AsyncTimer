@@ -65,8 +65,11 @@ public final actor AsyncDebouncer {
     }
 
     /// Cancels the current debounce operation.
-    public func cancel() {
-        cleanupTimer()
+    public func cancel() async {
+        if let timer {
+            await timer.stop()
+            cleanupTimer()
+        }
     }
 
     /// Whether the debouncer is currently waiting.

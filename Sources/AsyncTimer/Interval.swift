@@ -19,6 +19,10 @@ public enum Interval: Sendable {
     case seconds(_: Double)
     /// Minutes
     case minutes(_: UInt64)
+    /// Hours
+    case hours(_: UInt64)
+    /// Days
+    case days(_: UInt64)
 
     /// Nanoseconds presentation.
     public var nanoseconds: UInt64 {
@@ -33,6 +37,10 @@ public enum Interval: Sendable {
             return UInt64(value * 1_000_000_000)
         case let .minutes(value):
             return value * 60 * 1_000_000_000
+        case let .hours(value):
+            return value * 60 * 60 * 1_000_000_000
+        case let .days(value):
+            return value * 24 * 60 * 60 * 1_000_000_000
         }
     }
 

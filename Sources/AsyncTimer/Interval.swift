@@ -25,6 +25,8 @@ public enum Interval: Sendable {
     case days(_: UInt64)
 
     /// Nanoseconds presentation.
+    ///
+    /// Note: Negative durations are treated as 0 to avoid accidental large UInt64 conversions.
     public var nanoseconds: UInt64 {
         switch self {
         case let .nanoseconds(value):
@@ -34,6 +36,7 @@ public enum Interval: Sendable {
         case let .milliseconds(value):
             return value * 1_000_000
         case let .seconds(value):
+            if value <= 0 { return 0 }
             return UInt64(value * 1_000_000_000)
         case let .minutes(value):
             return value * 60 * 1_000_000_000
@@ -51,13 +54,38 @@ public enum Interval: Sendable {
     public static let infinite: Interval = .nanoseconds(UInt64.max)
 
     /// Whether the interval is zero.
-    public var isZero: Bool { nanoseconds == 0 }
+    public var isZero: Bool {
+        switch self {
+        case let .nanoseconds(value): return value == 0
+        case let .microseconds(value): return value == 0
+        case let .milliseconds(value): return value == 0
+        case let .seconds(value): return value == 0
+        case let .minutes(value): return value == 0
+        case let .hours(value): return value == 0
+        case let .days(value): return value == 0
+        }
+    }
 
     /// Whether the interval is positive.
-    public var isPositive: Bool { nanoseconds > 0 }
+    public var isPositive: Bool {
+        switch self {
+        case let .nanoseconds(value): return value > 0
+        case let .microseconds(value): return value > 0
+        case let .milliseconds(value): return value > 0
+        case let .seconds(value): return value > 0
+        case let .minutes(value): return value > 0
+        case let .hours(value): return value > 0
+        case let .days(value): return value > 0
+        }
+    }
 
     /// Whether the interval is negative.
-    public var isNegative: Bool { nanoseconds < 0 }
+    public var isNegative: Bool {
+        switch self {
+        case let .seconds(value): return value < 0
+        default: return false
+        }
+    }
 
     /// Whether the interval is valid.
     public var isValid: Bool { !isNegative }
